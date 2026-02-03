@@ -6,50 +6,38 @@ using UnityEngine;
 // NPC ¾ó±¼ È÷Æ® ½Ã ¸àÅ» Áõ°¡
 public class GazeController : MonoBehaviour
 {
-    ChildNPC currentChild;
-    public float gazeDistance = 5f;
+    ChildNPC currentNPC;
 
     void Update()
     {
-        PlayerController.Instance.SetState(PlayerState.Looking);
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-        Vector3 origin = Camera.main.transform.position
-               + Camera.main.transform.up * -0.2f;
-
-        Ray ray = new Ray(origin, Camera.main.transform.forward);
-
-        if (Physics.Raycast(ray, out RaycastHit hit, gazeDistance))
+        if (Physics.Raycast(ray, out RaycastHit hit, 5f))
         {
-            ChildNPC child = hit.collider.GetComponentInParent<ChildNPC>();
+            ChildNPC npc = hit.collider.GetComponentInParent<ChildNPC>();
 
-            if (child != currentChild)
+            if (npc != null)
             {
-                ResetCurrent();
-                currentChild = child;
-            }
+                if (npc != currentNPC)
+                {
+                    ResetCurrent();
+                    currentNPC = npc;
+                }
 
-            if (child != null)
-            {
-                child.OnGazed(Time.deltaTime);
-            }
-            else
-            {
-                ResetCurrent();
+                npc.OnGazed(Time.deltaTime);
+                return;
             }
         }
-        else
-        {
-            ResetCurrent();
-        }
 
-        Debug.DrawRay(ray.origin, ray.direction * gazeDistance, Color.red);
+        ResetCurrent();
     }
 
     void ResetCurrent()
     {
-        if (currentChild != null)
-            currentChild.ResetGaze();
-
-        currentChild = null;
+        if (currentNPC != null)
+        {
+            currentNPC.ResetGaze();
+            currentNPC = null;
+        }
     }
 }

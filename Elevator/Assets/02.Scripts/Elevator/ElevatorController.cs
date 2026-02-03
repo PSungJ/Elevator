@@ -6,13 +6,26 @@ using UnityEngine;
 // Èçµé¸² ¿¬Ãâ
 public class ElevatorController : MonoBehaviour
 {
+    [Header("NPCs Outside Elevator")]
     public List<NPCController> npcList;
-    public float enterDelay = 0.8f;
+
+    [Header("Stand Points Inside Elevator")]
+    public Transform[] standPoints;
+
+    [Header("Timings")]
+    public float enterDelay = 1.5f;
+    public float npcInterval = 0.5f;
+
     Animator ani;
+    List<Transform> availablePoints;
 
     void Start()
     {
         ani = GetComponent<Animator>();
+
+        // ºó ÀÚ¸® ¸ñ·Ï ÃÊ±âÈ­
+        availablePoints = new List<Transform>(standPoints);
+
         StartCoroutine(ElevatorArrivedSequence());
     }
 
@@ -21,28 +34,37 @@ public class ElevatorController : MonoBehaviour
         OpenDoor();
         yield return new WaitForSeconds(enterDelay);
 
-        NPCController npc = SelectNPC();
-        if (npc != null)
-            npc.EnterElevator();
+        foreach (var npc in npcList)
+        {
+            Transform targetPoint = GetAvailablePoint();
+            if (targetPoint == null)
+                break;
+
+            npc.EnterElevator(targetPoint);
+            yield return new WaitForSeconds(npcInterval);
+        }
 
         yield return new WaitForSeconds(2f);
         CloseDoor();
     }
 
-    NPCController SelectNPC()
+    Transform GetAvailablePoint()
     {
-        if (npcList.Count == 0) return null;
+        if (availablePoints.Count == 0)
+            return null;
 
-        // ·£´ý
-        int index = Random.Range(0, npcList.Count);
-        return npcList[index];
+        int index = Random.Range(0, availablePoints.Count);
+        Transform point = availablePoints[index];
+        availablePoints.RemoveAt(index);
+        return point;
     }
 
-    void OpenDoor() 
+    void OpenDoor()
     {
         ani.SetBool("isOpen", true);
     }
-    void CloseDoor() 
+
+    void CloseDoor()
     {
         ani.SetBool("isOpen", false);
     }
