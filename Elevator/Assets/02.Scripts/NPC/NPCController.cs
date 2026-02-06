@@ -5,13 +5,24 @@ using UnityEngine.AI;
 
 public class NPCController : MonoBehaviour
 {
+    [Header("Look Direction")]
+    public Transform defaultLookTarget; // 엘리베이터 정면 (문 방향)
+
+    enum LookState
+    {
+        None,
+        Default,   // 정면
+        Player     // 플레이어
+    }
+
+    LookState lookState = LookState.None;
+
     NavMeshAgent agent;
     Animator ani;
     Transform player;
     BaseNPC npcLogic;
 
     bool hasArrived = false;
-    bool isLookingPlayer = false;
 
     // 애니메이션 안정화용
     bool isWalking;
@@ -34,10 +45,10 @@ public class NPCController : MonoBehaviour
     public void EnterElevator(Transform standPoint)
     {
         hasArrived = false;
-        isLookingPlayer = false;
         isWalking = false;
 
         // ?? 이동 중 시선 강제 완전 차단
+        lookState = LookState.None;
         PlayerController.Instance.ReleaseForceLook();
 
         agent.isStopped = false;
@@ -52,15 +63,14 @@ public class NPCController : MonoBehaviour
         {
             hasArrived = true;
             agent.isStopped = true;
-            isLookingPlayer = true;
+
+            // 도착 시 기본은 정면
+            lookState = LookState.Default;
 
             npcLogic?.OnArrivedInElevator();
         }
 
-        if (isLookingPlayer)
-        {
-            RotateTowardPlayer();
-        }
+        UpdateLook();
     }
 
     // =========================
@@ -93,12 +103,28 @@ public class NPCController : MonoBehaviour
     }
 
     // =========================
-    // 플레이어 바라보기
+    // 시선 처리
     // =========================
 
-    void RotateTowardPlayer()
+    void UpdateLook()
     {
-        Vector3 dir = player.position - transform.position;
+        switch (lookState)
+        {
+            case LookState.Default:
+                RotateToward(defaultLookTarget);
+                break;
+
+            case LookState.Player:
+                RotateToward(player);
+                break;
+        }
+    }
+
+    void RotateToward(Transform target)
+    {
+        if (target == null) return;
+
+        Vector3 dir = target.position - transform.position;
         dir.y = 0f;
 
         if (dir.sqrMagnitude < 0.01f) return;
@@ -109,5 +135,12 @@ public class NPCController : MonoBehaviour
             targetRot,
             Time.deltaTime * rotateSpeed
         );
+    }
+
+    public void SetLookPlayer(bool lookPlayer)
+    {
+        if (!hasArrived) return;
+
+        lookState = lookPlayer ? LookState.Player : LookState.Default;
     }
 }

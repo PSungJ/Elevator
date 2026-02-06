@@ -6,17 +6,34 @@ using UnityEngine;
 // NPC 얼굴 히트 시 멘탈 증가
 public class GazeController : MonoBehaviour
 {
-    ChildNPC currentNPC;
+    BaseNPC currentNPC;
+
+    [Header("Gaze Settings")]
+    public float gazeDistance = 5f;
+
+    [Header("Debug")]
+    public Color rayColor = Color.red;
 
     void Update()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Camera cam = Camera.main;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, 5f))
+        // 카메라 정면 기준 Ray
+        Ray ray = new Ray(cam.transform.position, cam.transform.forward);
+
+        // 디버그용 Ray 표시 (Scene View)
+        Debug.DrawRay(
+            ray.origin,
+            ray.direction * gazeDistance,
+            rayColor
+        );
+
+        if (Physics.Raycast(ray, out RaycastHit hit, gazeDistance))
         {
-            ChildNPC npc = hit.collider.GetComponentInParent<ChildNPC>();
+            BaseNPC npc = hit.collider.GetComponentInParent<BaseNPC>();
 
-            if (npc != null)
+            // NPC + 쳐다볼 수 있는 상태만 허용
+            if (npc != null && npc.CanInteract && npc.IsActing)
             {
                 if (npc != currentNPC)
                 {

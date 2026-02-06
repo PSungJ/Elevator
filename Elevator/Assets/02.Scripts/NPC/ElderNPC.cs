@@ -1,25 +1,36 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// 노인 NPC
-/// - 이상행동 중 플레이어 시선 강제
-/// - 쳐다보면 행동 중단 + 민망함 증가
-/// - 시선을 피하면 일정 시간 후 다시 이상행동
+/// - 이상행동 중 시선 강제
+/// - 3~5초 이상 바라보면 민망함 크게 증가
+/// - 5초간 시선 강제 버티면 자동 해제
 /// </summary>
 public class ElderNPC : BaseNPC
 {
+    [Header("Gaze Gauge UI")]
+    public GazeGaugeUI gazeGaugeUI;
+
     enum State
     {
-        Idle,       // 아무 행동 안 함
-        Acting      // 이상행동 중
+        Idle,
+        Acting
     }
+
     State state = State.Idle;
     bool hasArrived = false;
 
     Animator ani;
-    Coroutine behaviorRoutine;
+    NPCController npcController;
+
+    // ===== 타이머 =====
+    float gazeTimer = 0f;        // 플레이어가 바라본 시간
+    float forceLookTimer = 0f;   // 강제 시선 유지 시간
+
+    // ===== 설정값 =====
+    float gazeRequiredTime;      // 3~5초 랜덤
+    const float FORCE_LOOK_LIMIT = 5f;
 
     float calmDelayMin = 5f;
     float calmDelayMax = 10f;
@@ -30,38 +41,28 @@ public class ElderNPC : BaseNPC
     void Start()
     {
         ani = GetComponent<Animator>();
+        npcController = GetComponent<NPCController>();
     }
 
-    /// <summary>
-    /// 엘리베이터 자리 도착
-    /// </summary>
     public override void OnArrivedInElevator()
     {
         if (hasArrived) return;
         hasArrived = true;
 
-        behaviorRoutine = StartCoroutine(BehaviorLoop());
+        StartCoroutine(BehaviorLoop());
     }
 
-    /// <summary>
-    /// 평온 → 이상행동 반복 루프
-    /// </summary>
     IEnumerator BehaviorLoop()
     {
         while (true)
         {
-            // 평온 시간
             yield return new WaitForSeconds(Random.Range(calmDelayMin, calmDelayMax));
             StartWeirdAction();
 
-            // 행동이 끝날 때까지 대기
             yield return new WaitUntil(() => state == State.Idle);
         }
     }
 
-    /// <summary>
-    /// 이상행동 시작
-    /// </summary>
     void StartWeirdAction()
     {
         if (!hasArrived || state == State.Acting)
@@ -69,52 +70,80 @@ public class ElderNPC : BaseNPC
 
         state = State.Acting;
 
+        // 타이머 초기화
+        gazeTimer = 0f;
+        forceLookTimer = 0f;
+        gazeRequiredTime = Random.Range(3f, 5f);
+
+        gazeGaugeUI.Show(true);
+        gazeGaugeUI.SetGauge(0f);
+
         PlayRandomAction();
 
-        // 이상행동 중 시선 강제
+        npcController.SetLookPlayer(true);
         PlayerController.Instance.ForceLookAt(transform);
     }
 
+    void Update()
+    {
+        if (state != State.Acting)
+            return;
+
+        // 강제 시선 버티기 타이머
+        forceLookTimer += Time.deltaTime;
+
+        // 5초 버티면 자동 해제 (플레이어 승리)
+        if (forceLookTimer >= FORCE_LOOK_LIMIT)
+        {
+            StopWeirdAction();
+        }
+    }
+
     /// <summary>
-    /// 플레이어가 노인을 쳐다보고 있을 때 호출됨
+    /// 플레이어가 노인을 바라보고 있을 때
     /// </summary>
     public override void OnGazed(float deltaTime)
     {
-        if (!CanInteract || state != State.Acting) return;
+        if (!CanInteract || state != State.Acting)
+            return;
 
-        // 민망함 증가
-        PlayerController.Instance.AddAwkward(deltaTime * 1.5f);
-        StopWeirdAction();
+        gazeTimer += deltaTime;
+        
+        float normalized = gazeTimer / gazeRequiredTime;
+        gazeGaugeUI.SetGauge(normalized);
+
+        // 3~5초 이상 바라봤을 때만 민망함 증가
+        if (gazeTimer >= gazeRequiredTime)
+        {
+            PlayerController.Instance.AddAwkward(25f); // 한 번에 크게 증가
+            StopWeirdAction();
+        }
     }
 
     public override void ResetGaze()
     {
-        // 시선을 피했을 때는 아무것도 안 함
-        // → BehaviorLoop가 다시 행동을 시작시킴
+        if (state != State.Acting) return;
+
+        // 시선을 피하면 gazeTimer 감소 (완전 리셋은 아님)
+        gazeTimer = Mathf.Max(0f, gazeTimer - Time.deltaTime);
+        gazeGaugeUI.SetGauge(gazeTimer / gazeRequiredTime);
     }
 
-    /// <summary>
-    /// 이상행동 중단
-    /// </summary>
     void StopWeirdAction()
     {
         state = State.Idle;
+
+        ani.SetBool("isWalk", false);
+
+        gazeGaugeUI.Show(false);
+
+        npcController.SetLookPlayer(false);
         PlayerController.Instance.ReleaseForceLook();
-        //StopActionAnimation();
     }
 
-    /// <summary>
-    /// 6가지 중 랜덤 행동 실행
-    /// </summary>
     void PlayRandomAction()
     {
-        int index = Random.Range(0, 5); // Action0 ~ Action5
+        int index = Random.Range(0, 4);
         ani.SetTrigger("Action" + index);
-    }
-
-    void StopActionAnimation()
-    {
-        // Trigger 기반이면 굳이 Reset 안 해도 됨
-        // 필요하면 여기서 Idle 상태용 파라미터 처리
     }
 }
