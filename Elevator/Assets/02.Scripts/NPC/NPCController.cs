@@ -5,6 +5,8 @@ using UnityEngine.AI;
 
 public class NPCController : MonoBehaviour
 {
+    public bool IsSettled { get; private set; }
+
     [Header("Look Direction")]
     public Transform defaultLookTarget; // 엘리베이터 정면 (문 방향)
 
@@ -23,6 +25,9 @@ public class NPCController : MonoBehaviour
     BaseNPC npcLogic;
 
     bool hasArrived = false;
+    bool isEnteringElevator = false;
+    bool hasStartedMoving = false;
+    bool hasEverMoved = false;
 
     // 애니메이션 안정화용
     bool isWalking;
@@ -30,6 +35,8 @@ public class NPCController : MonoBehaviour
     const float WALK_STOP = 0.05f;
 
     float rotateSpeed = 5f;
+
+    public bool HasArrived => hasArrived;
 
     void Awake()
     {
@@ -46,28 +53,39 @@ public class NPCController : MonoBehaviour
     {
         hasArrived = false;
         isWalking = false;
+        isEnteringElevator = true;
+        IsSettled = false;
 
         // ?? 이동 중 시선 강제 완전 차단
         lookState = LookState.None;
         PlayerController.Instance.ReleaseForceLook();
 
+        StartCoroutine(EnterAfterDoorOpen(standPoint));
+    }
+
+    IEnumerator EnterAfterDoorOpen(Transform standPoint)
+    {
+        // 문 열릴 때까지 대기
+        yield return new WaitUntil(() => ElevatorController.Instance.IsDoorOpen);
+
         agent.isStopped = false;
         agent.SetDestination(standPoint.position);
+        hasStartedMoving = true;
     }
 
     void Update()
     {
         UpdateWalkAnimation();
 
-        if (!hasArrived && HasArrived())
+        // 실제 이동 시작 감지
+        if (hasStartedMoving && !hasEverMoved && agent.velocity.sqrMagnitude > 0.01f)
         {
-            hasArrived = true;
-            agent.isStopped = true;
+            hasEverMoved = true;
+        }
 
-            // 도착 시 기본은 정면
-            lookState = LookState.Default;
-
-            npcLogic?.OnArrivedInElevator();
+        if (isEnteringElevator && hasEverMoved && !hasArrived && CheckArrivedByAgent())
+        {
+            OnReachedStandPoint();
         }
 
         UpdateLook();
@@ -76,14 +94,23 @@ public class NPCController : MonoBehaviour
     // =========================
     // 이동 / 도착 판정
     // =========================
-
-    bool HasArrived()
+    bool CheckArrivedByAgent() // 내부 전용 도착 판정 함수
     {
         if (agent.pathPending) return false;
-        if (agent.remainingDistance > agent.stoppingDistance) return false;
-        if (agent.velocity.sqrMagnitude > 0.01f) return false;
+        return agent.remainingDistance <= agent.stoppingDistance;
+    }
 
-        return true;
+    void OnReachedStandPoint()
+    {
+        hasArrived = true;
+        isEnteringElevator = false;
+
+        agent.isStopped = true;
+        IsSettled = true;
+
+        lookState = LookState.Default;
+
+        npcLogic?.OnArrivedInElevator();
     }
 
     // =========================
@@ -139,8 +166,6 @@ public class NPCController : MonoBehaviour
 
     public void SetLookPlayer(bool lookPlayer)
     {
-        if (!hasArrived) return;
-
         lookState = lookPlayer ? LookState.Player : LookState.Default;
     }
 }

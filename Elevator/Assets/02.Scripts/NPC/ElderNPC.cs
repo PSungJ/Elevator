@@ -47,8 +47,8 @@ public class ElderNPC : BaseNPC
     public override void OnArrivedInElevator()
     {
         if (hasArrived) return;
-        hasArrived = true;
 
+        hasArrived = true;
         StartCoroutine(BehaviorLoop());
     }
 
@@ -59,13 +59,14 @@ public class ElderNPC : BaseNPC
             yield return new WaitForSeconds(Random.Range(calmDelayMin, calmDelayMax));
             StartWeirdAction();
 
-            yield return new WaitUntil(() => state == State.Idle);
+            // Acting이 끝날 때까지 대기
+            yield return new WaitWhile(() => state == State.Acting);
         }
     }
 
     void StartWeirdAction()
     {
-        if (!hasArrived || state == State.Acting)
+        if (state == State.Acting)
             return;
 
         state = State.Acting;
@@ -104,7 +105,7 @@ public class ElderNPC : BaseNPC
     /// </summary>
     public override void OnGazed(float deltaTime)
     {
-        if (!CanInteract || state != State.Acting)
+        if (state != State.Acting)
             return;
 
         gazeTimer += deltaTime;

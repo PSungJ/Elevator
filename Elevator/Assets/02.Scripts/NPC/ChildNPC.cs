@@ -4,57 +4,104 @@ using UnityEngine;
 
 public class ChildNPC : BaseNPC
 {
-    bool hasArrived = false;
+    bool gimmickFinished = false;
+    bool playerIsLookingAtMe = false;
 
-    public override bool CanInteract => hasArrived;
+    [Header("Gaze Clear Condition")]
+    public float requiredGazeTime = 5f;
+    public float pressureAwkwardPerSecond = 1f;
 
-    public override void OnArrivedInElevator()
-    {
-        hasArrived = true;
-    }
-
-    public float gazeBreakTime = 2f;
-    public float avoidDuration = 3f;
+    [Header("Pressure UI")]
+    public PressureBorderUI pressureUI;
 
     float gazeTimer = 0f;
-    bool isAvoiding = false;
 
+    NPCController npcController;
+
+    public override bool CanInteract => npcController.HasArrived && !gimmickFinished;
+
+    void Start()
+    {
+        npcController = GetComponent<NPCController>();
+    }
+
+    void Update()
+    {
+        if (!CanInteract)
+        {
+            Debug.Log("ChildNPC Update blocked");
+            return;
+        }
+        if (!npcController.IsSettled)
+            return;
+
+        Debug.Log("ChildNPC Update ADD AWKWARD");
+        PlayerController.Instance.AddAwkward(
+            pressureAwkwardPerSecond * Time.deltaTime
+        );
+    }
+
+    /// <summary>
+    /// 엘리베이터 도착
+    /// </summary>
+    public override void OnArrivedInElevator()
+    {
+        // 아이가 먼저 플레이어를 쳐다봄
+        npcController.SetLookPlayer(true);
+
+        // 압박 UI 호출
+        pressureUI.Show();
+    }
+
+    /// <summary>
+    /// 플레이어가 아이를 쳐다보고 있을 때
+    /// </summary>
     public override void OnGazed(float deltaTime)
     {
-        // 쳐다보는 동안 민망함 증가
-        PlayerController.Instance.AddAwkward(deltaTime);
+        if (!CanInteract)
+            return;
 
-        if (isAvoiding) return;
+        playerIsLookingAtMe = true;
 
         gazeTimer += deltaTime;
 
-        if (gazeTimer >= gazeBreakTime)
+        Debug.Log($"{gazeTimer:F2} / {requiredGazeTime} - Player Gazing");
+
+        if (gazeTimer >= requiredGazeTime)
         {
-            StartCoroutine(AvoidGaze());
+            FinishGimmick();
         }
     }
 
+    /// <summary>
+    /// 플레이어가 시선을 떼면
+    /// </summary>
     public override void ResetGaze()
     {
-        gazeTimer = 0f;
+        if (!CanInteract)
+            return;
+
+        playerIsLookingAtMe = false;
+        gazeTimer = 0f; // 연속 응시 조건
     }
 
-    IEnumerator AvoidGaze()
+    /// <summary>
+    /// 기믹 종료
+    /// </summary>
+    void FinishGimmick()
     {
-        isAvoiding = true;
-        gazeTimer = 0f;
+        gimmickFinished = true;
 
-        // 아이 시선 회피 (고개 돌리기 등)
+        npcController.SetLookPlayer(false);
         LookAway();
 
-        yield return new WaitForSeconds(avoidDuration);
-
-        isAvoiding = false;
+        // UI 종료
+        pressureUI.Hide();
     }
 
     void LookAway()
     {
-        // 간단히 랜덤 방향
-        transform.Rotate(0f, Random.Range(120f, 200f), 0f);
+        float angle = Random.Range(120f, 200f);
+        transform.Rotate(0f, angle, 0f);
     }
 }

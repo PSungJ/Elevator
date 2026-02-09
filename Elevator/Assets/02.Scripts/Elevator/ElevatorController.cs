@@ -6,6 +6,9 @@ using UnityEngine;
 // 흔들림 연출
 public class ElevatorController : MonoBehaviour
 {
+    public static ElevatorController Instance;
+    public bool IsDoorOpen { get; private set; }
+
     [Header("NPCs Outside Elevator")]
     public List<NPCController> npcList;
 
@@ -16,14 +19,22 @@ public class ElevatorController : MonoBehaviour
     public float enterDelay = 1.5f;
     public float npcInterval = 0.5f;
 
+    [Header("Settings")]
+    public int maxNPCCount = 4;
+
     Animator ani;
     List<Transform> availablePoints;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
         ani = GetComponent<Animator>();
 
-        // 빈 자리 목록 초기화
+        // 빈 자리 초기화
         availablePoints = new List<Transform>(standPoints);
 
         StartCoroutine(ElevatorArrivedSequence());
@@ -34,7 +45,10 @@ public class ElevatorController : MonoBehaviour
         OpenDoor();
         yield return new WaitForSeconds(enterDelay);
 
-        foreach (var npc in npcList)
+        // 랜덤 NPC 선별
+        List<NPCController> selectedNPCs = GetRandomNPCs();
+
+        foreach (var npc in selectedNPCs)
         {
             Transform targetPoint = GetAvailablePoint();
             if (targetPoint == null)
@@ -48,6 +62,29 @@ public class ElevatorController : MonoBehaviour
         CloseDoor();
     }
 
+    // =========================
+    // 랜덤 NPC 선택
+    // =========================
+    List<NPCController> GetRandomNPCs()
+    {
+        List<NPCController> tempList = new List<NPCController>(npcList);
+        List<NPCController> result = new List<NPCController>();
+
+        int count = Mathf.Min(maxNPCCount, tempList.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            int index = Random.Range(0, tempList.Count);
+            result.Add(tempList[index]);
+            tempList.RemoveAt(index);
+        }
+
+        return result;
+    }
+
+    // =========================
+    // 빈 자리 배정
+    // =========================
     Transform GetAvailablePoint()
     {
         if (availablePoints.Count == 0)
@@ -59,13 +96,18 @@ public class ElevatorController : MonoBehaviour
         return point;
     }
 
+    // =========================
+    // 문 제어
+    // =========================
     void OpenDoor()
     {
         ani.SetBool("isOpen", true);
+        IsDoorOpen = true;
     }
 
     void CloseDoor()
     {
         ani.SetBool("isOpen", false);
+        IsDoorOpen = false;
     }
 }

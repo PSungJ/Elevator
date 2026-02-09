@@ -19,7 +19,7 @@ public class GazeController : MonoBehaviour
         Camera cam = Camera.main;
 
         // 카메라 정면 기준 Ray
-        Ray ray = new Ray(cam.transform.position, cam.transform.forward);
+        Ray ray = new Ray(Camera.main.transform.position, Camera.main.transform.forward);
 
         // 디버그용 Ray 표시 (Scene View)
         Debug.DrawRay(
@@ -33,7 +33,7 @@ public class GazeController : MonoBehaviour
             BaseNPC npc = hit.collider.GetComponentInParent<BaseNPC>();
 
             // NPC + 쳐다볼 수 있는 상태만 허용
-            if (npc != null && npc.CanInteract && npc.IsActing)
+            if (npc != null && npc.CanInteract)
             {
                 if (npc != currentNPC)
                 {

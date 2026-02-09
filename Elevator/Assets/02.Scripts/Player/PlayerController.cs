@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
 {
     public static PlayerController Instance;
 
+    [SerializeField] AwkwardUI awkwardUI;
+
     [Header("Awkward Gauge")]
     public float awkward;              // 현재 민망함
     public float maxAwkward = 100f;     // 최대 민망함
@@ -22,7 +24,7 @@ public class PlayerController : MonoBehaviour
     public float maxPitch = 30f;        // 위 시점 제한
 
     [Header("Force Look")]
-    public float forceStrength = 2.0f;  // 시선이 끌리는 힘 (노인 행동 강도)
+    public float forceStrength = 3.5f;  // 시선이 끌리는 힘 (노인 행동 강도)
     public float resistStrength = 1.0f; // 플레이어 저항력 (마우스 영향력)
 
     Camera cam;
@@ -127,6 +129,7 @@ public class PlayerController : MonoBehaviour
         awkward += amount;
         awkward = Mathf.Clamp(awkward, 0f, maxAwkward);
 
+        awkwardUI.SetAwkward(awkward / maxAwkward);
         // 디버그 확인용
         Debug.Log($"Awkward Gauge: {awkward}");
     }
