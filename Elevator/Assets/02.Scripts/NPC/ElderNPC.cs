@@ -85,8 +85,9 @@ public class ElderNPC : BaseNPC
         PlayerController.Instance.ForceLookAt(transform);
     }
 
-    void Update()
+    protected override void Update()
     {
+        base.Update();
         if (state != State.Acting)
             return;
 
@@ -105,6 +106,8 @@ public class ElderNPC : BaseNPC
     /// </summary>
     public override void OnGazed(float deltaTime)
     {
+        base.OnGazed(deltaTime); // 공통 압박
+
         if (state != State.Acting)
             return;
 
@@ -123,6 +126,7 @@ public class ElderNPC : BaseNPC
 
     public override void ResetGaze()
     {
+        base.ResetGaze();
         if (state != State.Acting) return;
 
         // 시선을 피하면 gazeTimer 감소 (완전 리셋은 아님)

@@ -2,10 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-
+public enum NPCType
+{
+    Child,
+    Elder,
+    Adult
+}
+/// <summary>
+/// NPC 이동 / 정착 / 시선 제어 담당
+/// 개별 NPC 기믹 로직은 BaseNPC 파생 클래스에서 처리
+/// </summary>
 public class NPCController : MonoBehaviour
 {
-    public bool IsSettled { get; private set; }
+    public NPCType npcType;
+    public bool IsSettled { get; private set; }   // 엘리베이터 내부 정착 여부
+    public bool HasArrived => hasArrived;         // 목적지 도착 여부 (외부 참조용)
 
     [Header("Look Direction")]
     public Transform defaultLookTarget; // 엘리베이터 정면 (문 방향)
@@ -26,7 +37,9 @@ public class NPCController : MonoBehaviour
 
     bool hasArrived = false;
     bool isEnteringElevator = false;
-    bool hasStartedMoving = false;
+    //bool hasStartedMoving = false;
+    
+    // 이동 시작 여부 감지용
     bool hasEverMoved = false;
 
     // 애니메이션 안정화용
@@ -36,14 +49,24 @@ public class NPCController : MonoBehaviour
 
     float rotateSpeed = 5f;
 
-    public bool HasArrived => hasArrived;
-
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         ani = GetComponent<Animator>();
         npcLogic = GetComponent<BaseNPC>();
         player = Camera.main.transform;
+        if (defaultLookTarget == null && ElevatorController.Instance != null)
+        {
+            defaultLookTarget = ElevatorController.Instance.elevatorLookTarget;
+        }
+    }
+
+    /// <summary>
+    /// 엘리베이터 정면 LookTarget 설정
+    /// </summary>
+    public void SetDefaultLookTarget(Transform target)
+    {
+        defaultLookTarget = target;
     }
 
     /// <summary>
@@ -52,15 +75,29 @@ public class NPCController : MonoBehaviour
     public void EnterElevator(Transform standPoint)
     {
         hasArrived = false;
-        isWalking = false;
-        isEnteringElevator = true;
         IsSettled = false;
+        hasEverMoved = false;
+        isEnteringElevator = true;
 
-        // ?? 이동 중 시선 강제 완전 차단
         lookState = LookState.None;
         PlayerController.Instance.ReleaseForceLook();
 
         StartCoroutine(EnterAfterDoorOpen(standPoint));
+    }
+
+    /// <summary>
+    /// 층 이동 시 NPC 하차 처리
+    /// </summary>
+    public void ExitElevator()
+    {
+        hasArrived = false;
+        IsSettled = false;
+        isEnteringElevator = false;
+
+        agent.isStopped = true;
+        lookState = LookState.None;
+
+        // 필요하면 하차 애니메이션 트리거 추가 가능
     }
 
     IEnumerator EnterAfterDoorOpen(Transform standPoint)
@@ -68,9 +105,22 @@ public class NPCController : MonoBehaviour
         // 문 열릴 때까지 대기
         yield return new WaitUntil(() => ElevatorController.Instance.IsDoorOpen);
 
+        var agent = GetComponent<NavMeshAgent>();
+
+        agent.enabled = true;
+        yield return null; // NavMesh 인식 대기
+
+        if (!agent.isOnNavMesh)
+        {
+            Debug.LogError("NPC not on NavMesh at spawn point");
+            yield break;
+        }
+
         agent.isStopped = false;
         agent.SetDestination(standPoint.position);
-        hasStartedMoving = true;
+
+        agent.isStopped = false;
+        agent.SetDestination(standPoint.position);
     }
 
     void Update()
@@ -78,12 +128,14 @@ public class NPCController : MonoBehaviour
         UpdateWalkAnimation();
 
         // 실제 이동 시작 감지
-        if (hasStartedMoving && !hasEverMoved && agent.velocity.sqrMagnitude > 0.01f)
+        if (isEnteringElevator && !hasEverMoved &&
+            agent.velocity.sqrMagnitude > 0.01f)
         {
             hasEverMoved = true;
         }
 
-        if (isEnteringElevator && hasEverMoved && !hasArrived && CheckArrivedByAgent())
+        // 도착 판정
+        if (isEnteringElevator && hasEverMoved && !hasArrived && HasReached())
         {
             OnReachedStandPoint();
         }
@@ -92,12 +144,16 @@ public class NPCController : MonoBehaviour
     }
 
     // =========================
-    // 이동 / 도착 판정
+    // 도착 처리
     // =========================
-    bool CheckArrivedByAgent() // 내부 전용 도착 판정 함수
+
+    bool HasReached()
     {
         if (agent.pathPending) return false;
-        return agent.remainingDistance <= agent.stoppingDistance;
+        if (agent.remainingDistance > agent.stoppingDistance) return false;
+        if (agent.velocity.sqrMagnitude > 0.01f) return false;
+
+        return true;
     }
 
     void OnReachedStandPoint()

@@ -4,8 +4,17 @@ using UnityEngine;
 
 public class ChildNPC : BaseNPC
 {
-    bool gimmickFinished = false;
-    bool playerIsLookingAtMe = false;
+    enum State
+    {
+        Pressuring,
+        Cooldown
+    }
+
+    State state = State.Pressuring;
+
+    [Header("Cooldown")]
+    public float cooldownMin = 4f;
+    public float cooldownMax = 8f;
 
     [Header("Gaze Clear Condition")]
     public float requiredGazeTime = 5f;
@@ -15,19 +24,20 @@ public class ChildNPC : BaseNPC
     public PressureBorderUI pressureUI;
 
     float gazeTimer = 0f;
-
     NPCController npcController;
 
-    public override bool CanInteract => npcController.HasArrived && !gimmickFinished;
+    public override bool CanInteract =>
+        npcController.HasArrived && state == State.Pressuring;
 
     void Start()
     {
         npcController = GetComponent<NPCController>();
     }
 
-    void Update()
+    protected override void Update()
     {
-        if (!CanInteract)
+        base.Update();  // 공통 기믹
+        if (state != State.Pressuring)
         {
             Debug.Log("ChildNPC Update blocked");
             return;
@@ -35,9 +45,10 @@ public class ChildNPC : BaseNPC
         if (!npcController.IsSettled)
             return;
 
+        // 아이 기믹
         Debug.Log("ChildNPC Update ADD AWKWARD");
         PlayerController.Instance.AddAwkward(
-            pressureAwkwardPerSecond * Time.deltaTime
+                pressureAwkwardPerSecond * Time.deltaTime
         );
     }
 
@@ -46,6 +57,7 @@ public class ChildNPC : BaseNPC
     /// </summary>
     public override void OnArrivedInElevator()
     {
+        state = State.Pressuring;
         // 아이가 먼저 플레이어를 쳐다봄
         npcController.SetLookPlayer(true);
 
@@ -58,11 +70,9 @@ public class ChildNPC : BaseNPC
     /// </summary>
     public override void OnGazed(float deltaTime)
     {
-        if (!CanInteract)
-            return;
+        base.OnGazed(deltaTime); // 공통 민망함 압박
 
-        playerIsLookingAtMe = true;
-
+        if (!CanInteract) return;
         gazeTimer += deltaTime;
 
         Debug.Log($"{gazeTimer:F2} / {requiredGazeTime} - Player Gazing");
@@ -78,11 +88,8 @@ public class ChildNPC : BaseNPC
     /// </summary>
     public override void ResetGaze()
     {
-        if (!CanInteract)
-            return;
-
-        playerIsLookingAtMe = false;
-        gazeTimer = 0f; // 연속 응시 조건
+        base.ResetGaze(); // 공통 gaze 처리
+        gazeTimer = 0f;
     }
 
     /// <summary>
@@ -90,18 +97,33 @@ public class ChildNPC : BaseNPC
     /// </summary>
     void FinishGimmick()
     {
-        gimmickFinished = true;
+        state = State.Cooldown;
 
         npcController.SetLookPlayer(false);
         LookAway();
 
         // UI 종료
         pressureUI.Hide();
+        
+        gazeTimer = 0f;
+
+        StartCoroutine(CooldownRoutine());
     }
 
     void LookAway()
     {
         float angle = Random.Range(120f, 200f);
         transform.Rotate(0f, angle, 0f);
+    }
+
+    IEnumerator CooldownRoutine()
+    {
+        float wait = Random.Range(cooldownMin, cooldownMax);
+        yield return new WaitForSeconds(wait);
+
+        state = State.Pressuring;
+
+        npcController.SetLookPlayer(true);
+        pressureUI.Show();
     }
 }

@@ -2,28 +2,38 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 문 열림/닫힘
-// 흔들림 연출
+/// <summary>
+/// 엘리베이터 전체 흐름 제어
+/// - 층 도착
+/// - 문 열림 / 닫힘
+/// - NPC 승하차
+/// </summary>
 public class ElevatorController : MonoBehaviour
 {
     public static ElevatorController Instance;
+
+    [Header("Elevator Look Target")]
+    public Transform elevatorLookTarget; // Box004
+
     public bool IsDoorOpen { get; private set; }
-
-    [Header("NPCs Outside Elevator")]
-    public List<NPCController> npcList;
-
+    
+    [Header("NPC Spawn")]
+    public Transform[] npcSpawnPoint; // 엘리베이터 외부
     [Header("Stand Points Inside Elevator")]
     public Transform[] standPoints;
 
     [Header("Timings")]
     public float enterDelay = 1.5f;
-    public float npcInterval = 0.5f;
+    public float npcInterval = 0.4f;
+    public float stayDuration = 2f;
 
     [Header("Settings")]
     public int maxNPCCount = 4;
 
     Animator ani;
+
     List<Transform> availablePoints;
+    List<NPCController> currentNPCs = new List<NPCController>();
 
     void Awake()
     {
@@ -37,49 +47,93 @@ public class ElevatorController : MonoBehaviour
         // 빈 자리 초기화
         availablePoints = new List<Transform>(standPoints);
 
-        StartCoroutine(ElevatorArrivedSequence());
+        StartCoroutine(ElevatorLoop());
     }
 
-    IEnumerator ElevatorArrivedSequence()
+    // =========================
+    // 엘리베이터 메인 루프
+    // =========================
+
+    IEnumerator ElevatorLoop()
     {
-        OpenDoor();
-        yield return new WaitForSeconds(enterDelay);
-
-        // 랜덤 NPC 선별
-        List<NPCController> selectedNPCs = GetRandomNPCs();
-
-        foreach (var npc in selectedNPCs)
+        while (true)
         {
-            Transform targetPoint = GetAvailablePoint();
-            if (targetPoint == null)
-                break;
+            // ===== 층 도착 =====
+            OpenDoor();
 
-            npc.EnterElevator(targetPoint);
-            yield return new WaitForSeconds(npcInterval);
+            // 기존 NPC 하차
+            yield return StartCoroutine(ExitNPCs());
+
+            // 약간의 여유
+            yield return new WaitForSeconds(enterDelay);
+
+            // 다음 층 NPC 생성 & 탑승
+            yield return StartCoroutine(EnterNPCs());
+
+            // 잠시 정차
+            yield return new WaitForSeconds(stayDuration);
+
+            // 문 닫기
+            CloseDoor();
+
+            // 층 이동 연출 대기
+            yield return new WaitForSeconds(2f);
+
+            // 다음 층으로
+            FloorManager.Instance.MoveToNextFloor();
+        }
+    }
+
+    // =========================
+    // NPC 하차
+    // =========================
+
+    IEnumerator ExitNPCs()
+    {
+        foreach (var npc in currentNPCs)
+        {
+            npc.ExitElevator();
+
+            // 풀링 시스템과 연결된다면 여기서 Despawn
+            NPCSpawner.Instance.Despawn(npc);
+
+            yield return new WaitForSeconds(0.25f);
         }
 
-        yield return new WaitForSeconds(2f);
-        CloseDoor();
+        currentNPCs.Clear();
+        availablePoints = new List<Transform>(standPoints);
     }
 
     // =========================
-    // 랜덤 NPC 선택
+    // NPC 승차
     // =========================
-    List<NPCController> GetRandomNPCs()
-    {
-        List<NPCController> tempList = new List<NPCController>(npcList);
-        List<NPCController> result = new List<NPCController>();
 
-        int count = Mathf.Min(maxNPCCount, tempList.Count);
+    IEnumerator EnterNPCs()
+    {
+        FloorData floor = FloorManager.Instance.CurrentFloor;
+
+        int count = Random.Range(floor.minNPCCount, floor.maxNPCCount + 1);
 
         for (int i = 0; i < count; i++)
         {
-            int index = Random.Range(0, tempList.Count);
-            result.Add(tempList[index]);
-            tempList.RemoveAt(index);
-        }
+            Transform standPoint = GetAvailablePoint();
+            if (!standPoint) break;
 
-        return result;
+            NPCController npc = NPCSpawner.Instance.GetRandomNPC();
+            if (!npc) continue;
+
+            // 1. 외부 Spawn 위치에 배치
+            foreach (var sp in npcSpawnPoint)
+            {
+                npc.transform.position = sp.position;
+            }
+
+            // 2. 엘리베이터 탑승 시작
+            npc.EnterElevator(standPoint);
+
+            currentNPCs.Add(npc);
+            yield return new WaitForSeconds(npcInterval);
+        }
     }
 
     // =========================
