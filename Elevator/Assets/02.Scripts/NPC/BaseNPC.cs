@@ -20,18 +20,34 @@ public abstract class BaseNPC : MonoBehaviour
     protected float gazeHoldTimer = 0f;
     protected float awkwardTimer = 0f;
     protected bool isGazing = false;
+    protected bool isActive = false;
 
     /// <summary>
     /// 이상행동 중인지 여부
     /// (PlayerController 시선 강제 판단용)
     /// </summary>
-    public virtual bool IsActing => false;
+    public virtual bool IsActing => isActive;
 
     /// <summary>
     /// 플레이어와 상호작용 가능한 상태인지
     /// (엘리베이터 안, 도착 이후 등)
     /// </summary>
-    public virtual bool CanInteract => false;
+    public virtual bool CanInteract => isActive;
+
+    public virtual void OnRideStart()
+    {
+        isActive = true;
+    }
+
+    public virtual void OnRideEnd()
+    {
+        isActive = false;
+
+        // 상태 정리
+        isGazing = false;
+        gazeHoldTimer = 0f;
+        awkwardTimer = 0f;
+    }
 
     public abstract void OnArrivedInElevator();
     public virtual void OnGazed(float deltaTime)    // 공통 응시 처리 로직
@@ -65,7 +81,7 @@ public abstract class BaseNPC : MonoBehaviour
 
     protected virtual void Update() // 시선 안 볼 때 민망함 감소
     {
-        if (!CanInteract) return;
+        if (!isActive) return;
 
         if (!isGazing && awkwardTimer > 0f)
         {

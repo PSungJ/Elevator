@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 
 /// <summary>
 /// 노인 NPC
@@ -23,6 +24,7 @@ public class ElderNPC : BaseNPC
 
     Animator ani;
     NPCController npcController;
+    NavMeshAgent agent;
 
     // ===== 타이머 =====
     float gazeTimer = 0f;        // 플레이어가 바라본 시간
@@ -36,20 +38,38 @@ public class ElderNPC : BaseNPC
     float calmDelayMax = 10f;
 
     public override bool IsActing => state == State.Acting;
-    public override bool CanInteract => hasArrived;
+    public override bool CanInteract => isActive && hasArrived;
+    
+    Coroutine behaviorRoutine;
 
     void Start()
     {
         ani = GetComponent<Animator>();
         npcController = GetComponent<NPCController>();
+        agent = GetComponent<NavMeshAgent>();
+    }
+
+    public override void OnRideStart()
+    {
+        base.OnRideStart();
+        hasArrived = true;
     }
 
     public override void OnArrivedInElevator()
     {
-        if (hasArrived) return;
+        behaviorRoutine = StartCoroutine(BehaviorLoop());
+    }
 
-        hasArrived = true;
-        StartCoroutine(BehaviorLoop());
+    public override void OnRideEnd()
+    {
+        if (behaviorRoutine != null)
+        {
+            StopCoroutine(behaviorRoutine);
+            behaviorRoutine = null;
+        }
+        agent.isStopped = false; // 이동 복구
+
+        base.OnRideEnd();
     }
 
     IEnumerator BehaviorLoop()

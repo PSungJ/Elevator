@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using static ElevatorController;
 public enum NPCType
 {
     Child,
@@ -17,6 +18,7 @@ public class NPCController : MonoBehaviour
     public NPCType npcType;
     public bool IsSettled { get; private set; }   // 엘리베이터 내부 정착 여부
     public bool HasArrived => hasArrived;         // 목적지 도착 여부 (외부 참조용)
+    public System.Action<NPCController> OnExitCompleted;
 
     [Header("Look Direction")]
     public Transform defaultLookTarget; // 엘리베이터 정면 (문 방향)
@@ -28,6 +30,16 @@ public class NPCController : MonoBehaviour
         Player     // 플레이어
     }
 
+    public enum NPCState
+    {
+        Idle,
+        Boarding,
+        Riding,      // 기믹 ON
+        Unboarding,  // 기믹 OFF
+        Exited
+    }
+
+    public NPCState CurrentState { get; private set; }
     LookState lookState = LookState.None;
 
     NavMeshAgent agent;
@@ -37,7 +49,6 @@ public class NPCController : MonoBehaviour
 
     bool hasArrived = false;
     bool isEnteringElevator = false;
-    //bool hasStartedMoving = false;
     
     // 이동 시작 여부 감지용
     bool hasEverMoved = false;
@@ -88,16 +99,19 @@ public class NPCController : MonoBehaviour
     /// <summary>
     /// 층 이동 시 NPC 하차 처리
     /// </summary>
-    public void ExitElevator()
+    public void ExitElevator(Transform exitPoint)
     {
+        npcLogic?.OnRideEnd(); // 기믹 강제 종료
+
         hasArrived = false;
         IsSettled = false;
         isEnteringElevator = false;
 
-        agent.isStopped = true;
+        CurrentState = NPCState.Unboarding;
         lookState = LookState.None;
 
         // 필요하면 하차 애니메이션 트리거 추가 가능
+        StartCoroutine(ExitRoutine(exitPoint));
     }
 
     IEnumerator EnterAfterDoorOpen(Transform standPoint)
@@ -164,9 +178,62 @@ public class NPCController : MonoBehaviour
         agent.isStopped = true;
         IsSettled = true;
 
+        CurrentState = NPCState.Riding;
         lookState = LookState.Default;
 
+        npcLogic?.OnRideStart(); // 여기서만 기믹 시작
         npcLogic?.OnArrivedInElevator();
+    }
+
+    IEnumerator ExitRoutine(Transform exitPoint)
+    {
+        Debug.Log($"[NPC Exit] State={ElevatorController.Instance.CurrentState}, NavMesh={ElevatorController.Instance.IsNavMeshPossible}");
+        yield return new WaitUntil(() =>
+            ElevatorController.Instance.CurrentState == ElevatorState.Unboarding &&
+            ElevatorController.Instance.IsNavMeshPossible
+        );
+
+        // Agent 완전 비활성
+        agent.enabled = false;
+        yield return null;
+
+        // NavMesh 위로 강제 스냅
+        if (NavMesh.SamplePosition(
+            transform.position,
+            out NavMeshHit hit,
+            2.0f,
+            NavMesh.AllAreas))
+        {
+            transform.position = hit.position;
+        }
+        else
+        {
+            Debug.LogError("NPC failed to snap to NavMesh on exit");
+            yield break;
+        }
+
+        // Agent 재활성
+        agent.enabled = true;
+        yield return null;
+
+        agent.isStopped = false;
+        agent.SetDestination(exitPoint.position);
+
+        // 도착할 때까지 대기
+        while (true)
+        {
+            if (!agent.pathPending &&
+                agent.remainingDistance <= agent.stoppingDistance &&
+                agent.velocity.sqrMagnitude < 0.01f)
+                break;
+
+            yield return null;
+        }
+
+        npcLogic?.OnRideEnd();
+
+        // 하차 완료 알림
+        OnExitCompleted?.Invoke(this);
     }
 
     // =========================

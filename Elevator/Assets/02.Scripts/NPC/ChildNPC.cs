@@ -27,7 +27,7 @@ public class ChildNPC : BaseNPC
     NPCController npcController;
 
     public override bool CanInteract =>
-        npcController.HasArrived && state == State.Pressuring;
+        isActive && npcController.IsSettled && state == State.Pressuring;
 
     void Start()
     {
@@ -52,12 +52,18 @@ public class ChildNPC : BaseNPC
         );
     }
 
+    public override void OnRideStart()
+    {
+        base.OnRideStart();
+        state = State.Pressuring;
+        gazeTimer = 0f;
+    }
+
     /// <summary>
     /// 엘리베이터 도착
     /// </summary>
     public override void OnArrivedInElevator()
     {
-        state = State.Pressuring;
         // 아이가 먼저 플레이어를 쳐다봄
         npcController.SetLookPlayer(true);
 

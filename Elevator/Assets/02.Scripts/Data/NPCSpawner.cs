@@ -54,22 +54,33 @@ public class NPCSpawner : MonoBehaviour
     /// <summary>
     /// 엘리베이터에서 사용할 랜덤 NPC 반환
     /// </summary>
-    public NPCController GetRandomNPC()
+    public NPCController GetRandomNPCExcludeTypes(HashSet<NPCType> usedTypes)
     {
-        if (pool.Count == 0)
+        // 사용 가능한 후보 수집
+        List<NPCController> candidates = new List<NPCController>();
+
+        foreach (var npc in pool)
         {
-            Debug.LogWarning("NPC Pool is empty!");
+            if (!usedTypes.Contains(npc.npcType))
+            {
+                candidates.Add(npc);
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            Debug.LogWarning("No NPC available for unique spawn");
             return null;
         }
 
-        int index = Random.Range(0, pool.Count);
-        NPCController npc = pool[index];
-        pool.RemoveAt(index);
+        // 랜덤 선택
+        NPCController selected = candidates[Random.Range(0, candidates.Count)];
+        pool.Remove(selected);
 
-        npc.gameObject.SetActive(true);
-        ResetNPC(npc);
+        selected.gameObject.SetActive(true);
+        ResetNPC(selected);
 
-        return npc;
+        return selected;
     }
 
     // =========================
@@ -78,6 +89,7 @@ public class NPCSpawner : MonoBehaviour
 
     public void Despawn(NPCController npc)
     {
+        npc.GetComponent<BaseNPC>()?.OnRideEnd();
         npc.gameObject.SetActive(false);
         pool.Add(npc);
     }
