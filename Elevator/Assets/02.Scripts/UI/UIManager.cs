@@ -6,14 +6,10 @@ using UnityEngine;
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
+    public PressureBorderUI pressureBorderUI;
 
     void Awake()
     {
         Instance = this;
-    }
-
-    public void ShowResult(bool success)
-    {
-        // 결과 패널 활성화
     }
 }

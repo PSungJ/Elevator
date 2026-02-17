@@ -8,7 +8,7 @@ using UnityEngine.AI;
 /// - 3~5초 이상 바라보면 민망함 크게 증가
 /// - 5초간 시선 강제 버티면 자동 해제
 /// </summary>
-public class ElderNPC : BaseNPC
+public class ElderNPC : GimmickNPC
 {
     [Header("Gaze Gauge UI")]
     public GazeGaugeUI gazeGaugeUI;
@@ -34,12 +34,12 @@ public class ElderNPC : BaseNPC
     float gazeRequiredTime;      // 3~5초 랜덤
     const float FORCE_LOOK_LIMIT = 5f;
 
-    float calmDelayMin = 5f;
-    float calmDelayMax = 10f;
+    float calmDelayMin = 3f;
+    float calmDelayMax = 5f;
 
     public override bool IsActing => state == State.Acting;
-    public override bool CanInteract => isActive && hasArrived;
-    
+    public override bool CanGimmickInteract => isActive && state == State.Acting;
+
     Coroutine behaviorRoutine;
 
     void Start()
@@ -62,14 +62,30 @@ public class ElderNPC : BaseNPC
 
     public override void OnRideEnd()
     {
+        base.OnRideEnd();
+
+        // 행동 루프 완전 종료
         if (behaviorRoutine != null)
         {
             StopCoroutine(behaviorRoutine);
             behaviorRoutine = null;
         }
-        agent.isStopped = false; // 이동 복구
 
-        base.OnRideEnd();
+        // 상태 강제 종료
+        state = State.Idle;
+
+        // 강제 시선 해제
+        PlayerController.Instance.ReleaseForceLook();
+
+        // UI 정리
+        if (gazeGaugeUI != null)
+            gazeGaugeUI.Show(false);
+
+        // 애니메이션 정리
+        ani.SetBool("isWalk", false);
+
+        // NPC 시선 원복
+        npcController.SetLookPlayer(false);
     }
 
     IEnumerator BehaviorLoop()
@@ -86,6 +102,11 @@ public class ElderNPC : BaseNPC
 
     void StartWeirdAction()
     {
+        // 하차 중이거나 비활성 상태면 절대 시작 금지
+        if (!isActive)
+            return;
+        if (npcController.CurrentState != NPCController.NPCState.Riding)
+            return;
         if (state == State.Acting)
             return;
 
@@ -105,9 +126,9 @@ public class ElderNPC : BaseNPC
         PlayerController.Instance.ForceLookAt(transform);
     }
 
-    protected override void Update()
+    void Update()
     {
-        base.Update();
+        //base.Update();
         if (state != State.Acting)
             return;
 
@@ -128,7 +149,7 @@ public class ElderNPC : BaseNPC
     {
         base.OnGazed(deltaTime); // 공통 압박
 
-        if (state != State.Acting)
+        if (!CanGimmickInteract)
             return;
 
         gazeTimer += deltaTime;

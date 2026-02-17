@@ -10,51 +10,41 @@ public class GazeController : MonoBehaviour
 
     [Header("Gaze Settings")]
     public float gazeDistance = 5f;
+    public float recoverPerSec = 1f;
 
     [Header("Debug")]
     public Color rayColor = Color.red;
 
     void Update()
     {
-        Camera cam = Camera.main;
+        bool gazingAnyNPC = false;
 
-        // 카메라 정면 기준 Ray
-        Ray ray = new Ray(Camera.main.transform.position, Camera.main.transform.forward);
-
-        // 디버그용 Ray 표시 (Scene View)
-        Debug.DrawRay(
-            ray.origin,
-            ray.direction * gazeDistance,
-            rayColor
-        );
-
-        if (Physics.Raycast(ray, out RaycastHit hit, gazeDistance))
+        if (Physics.Raycast(
+            Camera.main.transform.position,
+            Camera.main.transform.forward,
+            out RaycastHit hit,
+            gazeDistance))
         {
             BaseNPC npc = hit.collider.GetComponentInParent<BaseNPC>();
 
-            // NPC + 쳐다볼 수 있는 상태만 허용
             if (npc != null && npc.CanInteract)
             {
+                gazingAnyNPC = true;
+
                 if (npc != currentNPC)
                 {
-                    ResetCurrent();
                     currentNPC = npc;
                 }
 
                 npc.OnGazed(Time.deltaTime);
-                return;
             }
         }
 
-        ResetCurrent();
-    }
-
-    void ResetCurrent()
-    {
-        if (currentNPC != null)
+        if (!gazingAnyNPC && !PlayerController.Instance.IsUnderPressure)
         {
-            currentNPC.ResetGaze();
-            currentNPC = null;
+            PlayerController.Instance.RecoverAwkward(
+                recoverPerSec * Time.deltaTime
+            );
         }
     }
 }

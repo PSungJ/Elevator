@@ -13,10 +13,4 @@ public class GameManager : MonoBehaviour
     {
         Instance = this;
     }
-
-    public void GameOver(bool success)
-    {
-        Time.timeScale = 0f;
-        UIManager.Instance.ShowResult(success);
-    }
 }

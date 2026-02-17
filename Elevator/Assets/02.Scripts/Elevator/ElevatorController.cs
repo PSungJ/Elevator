@@ -23,18 +23,15 @@ public class ElevatorController : MonoBehaviour
 
     public ElevatorState CurrentState { get; private set; }
     public bool IsNavMeshPossible { get; private set; }
+    public bool IsDoorOpen { get; private set; }
     [SerializeField] NavMeshObstacle[] doorObstacles;
 
     [Header("Elevator Look Target")]
     public Transform elevatorLookTarget; // Box004
 
-    public bool IsDoorOpen { get; private set; }
-    
-    [Header("NPC Spawn")]
-    public Transform npcSpawnPoint; // 엘리베이터 외부
-    
-    [Header("NPC Exit")]
-    public Transform npcExitPoint; // 엘리베이터 밖 (문 앞)
+    [Header("NPC Spawn / Exit")]
+    public Transform npcSpawnPoint;
+    public Transform npcExitPoint;
 
     [Header("Stand Points Inside Elevator")]
     public Transform[] standPoints;
@@ -42,7 +39,7 @@ public class ElevatorController : MonoBehaviour
     [Header("Timings")]
     public float enterDelay = 1.5f;
     public float npcInterval = 0.4f;
-    public float stayDuration = 2f;
+    public float stayDuration = 1f;
 
     [Header("Settings")]
     public int maxNPCCount = 4;
@@ -62,7 +59,7 @@ public class ElevatorController : MonoBehaviour
         ani = GetComponent<Animator>();
 
         // 빈 자리 초기화
-        availablePoints = new List<Transform>(standPoints);
+        ResetStandPoints();
 
         StartCoroutine(ElevatorLoop());
     }
@@ -79,22 +76,21 @@ public class ElevatorController : MonoBehaviour
             CurrentState = ElevatorState.Unboarding;
             OpenDoor();
 
-            yield return StartCoroutine(ExitNPCs());
+            yield return ExitNPCs();
 
+            ResetStandPoints();
             yield return new WaitForSeconds(enterDelay);
 
             // ===== NPC 탑승 =====
             CurrentState = ElevatorState.Boarding;
-
-            yield return StartCoroutine(EnterNPCs());
+            yield return EnterNPCs();
 
             yield return new WaitForSeconds(stayDuration);
 
-            CloseDoor();
-
             // ===== 이동 =====
+            CloseDoor();
             CurrentState = ElevatorState.Moving;
-            yield return new WaitForSeconds(10f);
+            yield return new WaitForSeconds(60f); // 다음 층 까지의 체류시간
 
             FloorManager.Instance.MoveToNextFloor();
         }
@@ -110,11 +106,20 @@ public class ElevatorController : MonoBehaviour
             yield break;
 
         int completed = 0;
+        float timeout = 6f;
+        float timer = 0f;
 
-        foreach (var npc in currentNPCs)
+        // 스냅샷 사용
+        var exitingNPCs = new List<NPCController>(currentNPCs);
+
+        Debug.Log($"[Elevator] Exit start count = {exitingNPCs.Count}");
+
+        foreach (var npc in exitingNPCs)
         {
+            if (npc == null) continue;
+
             npc.OnExitCompleted += OnNPCExitCompleted;
-            npc.ExitElevator(npcExitPoint); // 실제 하차 명령
+            npc.ExitElevator(npcExitPoint);
         }
 
         void OnNPCExitCompleted(NPCController npc)
@@ -124,8 +129,22 @@ public class ElevatorController : MonoBehaviour
             completed++;
         }
 
-        // 전원 하차 대기
-        yield return new WaitUntil(() => completed >= currentNPCs.Count);
+        yield return new WaitUntil(() =>
+        {
+            timer += Time.deltaTime;
+            return completed >= exitingNPCs.Count || timer >= timeout;
+        });
+
+        if (timer >= timeout)
+        {
+            Debug.LogError($"[Elevator] Exit timeout! {completed}/{exitingNPCs.Count}");
+
+            foreach (var npc in exitingNPCs)
+            {
+                if (npc != null)
+                    NPCSpawner.Instance.Despawn(npc);
+            }
+        }
 
         currentNPCs.Clear();
     }
@@ -137,30 +156,28 @@ public class ElevatorController : MonoBehaviour
     IEnumerator EnterNPCs()
     {
         FloorData floor = FloorManager.Instance.CurrentFloor;
-
         int count = Random.Range(floor.minNPCCount, floor.maxNPCCount + 1);
 
-        HashSet<NPCType> usedTypes = new HashSet<NPCType>();
+        HashSet<NPCType> usedTypes = new();
 
         for (int i = 0; i < count; i++)
         {
             Transform standPoint = GetAvailablePoint();
-            if (!standPoint) break;
+            if (!standPoint)
+                break;
 
             NPCController npc =
                 NPCSpawner.Instance.GetRandomNPCExcludeTypes(usedTypes);
 
-            if (!npc) break;
+            if (!npc)
+                break;
 
-            // 사용된 타입 기록
             usedTypes.Add(npc.npcType);
 
-            // 외부 스폰 위치
             npc.transform.position = npcSpawnPoint.position;
-
             npc.EnterElevator(standPoint);
-            currentNPCs.Add(npc);
 
+            currentNPCs.Add(npc);
             yield return new WaitForSeconds(npcInterval);
         }
     }
@@ -168,6 +185,10 @@ public class ElevatorController : MonoBehaviour
     // =========================
     // 빈 자리 배정
     // =========================
+    void ResetStandPoints()
+    {
+        availablePoints = new List<Transform>(standPoints);
+    }
     Transform GetAvailablePoint()
     {
         if (availablePoints.Count == 0)
@@ -197,23 +218,20 @@ public class ElevatorController : MonoBehaviour
 
         foreach (var obs in doorObstacles)
         {
-            if (obs != null)
-                obs.enabled = true;
+            if (obs) obs.enabled = true;
         }
     }
 
     // 문이 "완전히" 열렸을 때
     public void OnDoorFullyOpened()
     {
-        IsDoorOpen = true;
-
         foreach (var obs in doorObstacles)
         {
-            if (obs != null)
-                obs.enabled = false;
+            if (obs) obs.enabled = false;
         }
 
         IsNavMeshPossible = true;
+        IsDoorOpen = true;
         CurrentState = ElevatorState.Unboarding;
     }
 }

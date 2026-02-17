@@ -46,6 +46,7 @@ public class NPCController : MonoBehaviour
     Animator ani;
     Transform player;
     BaseNPC npcLogic;
+    GimmickNPC gimmickNPC;
 
     bool hasArrived = false;
     bool isEnteringElevator = false;
@@ -65,6 +66,7 @@ public class NPCController : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         ani = GetComponent<Animator>();
         npcLogic = GetComponent<BaseNPC>();
+        gimmickNPC = GetComponent<GimmickNPC>();
         player = Camera.main.transform;
         if (defaultLookTarget == null && ElevatorController.Instance != null)
         {
@@ -101,8 +103,6 @@ public class NPCController : MonoBehaviour
     /// </summary>
     public void ExitElevator(Transform exitPoint)
     {
-        npcLogic?.OnRideEnd(); // 기믹 강제 종료
-
         hasArrived = false;
         IsSettled = false;
         isEnteringElevator = false;
@@ -110,7 +110,9 @@ public class NPCController : MonoBehaviour
         CurrentState = NPCState.Unboarding;
         lookState = LookState.None;
 
-        // 필요하면 하차 애니메이션 트리거 추가 가능
+        npcLogic?.OnRideEnd();   // ← 노인 NPC 포함 강제 종료 핵심
+        PlayerController.Instance.ReleaseForceLook();
+
         StartCoroutine(ExitRoutine(exitPoint));
     }
 
@@ -182,57 +184,54 @@ public class NPCController : MonoBehaviour
         lookState = LookState.Default;
 
         npcLogic?.OnRideStart(); // 여기서만 기믹 시작
-        npcLogic?.OnArrivedInElevator();
+        gimmickNPC?.OnArrivedInElevator();
     }
 
     IEnumerator ExitRoutine(Transform exitPoint)
     {
-        Debug.Log($"[NPC Exit] State={ElevatorController.Instance.CurrentState}, NavMesh={ElevatorController.Instance.IsNavMeshPossible}");
+        // 문 + NavMesh 대기
         yield return new WaitUntil(() =>
             ElevatorController.Instance.CurrentState == ElevatorState.Unboarding &&
             ElevatorController.Instance.IsNavMeshPossible
         );
 
-        // Agent 완전 비활성
-        agent.enabled = false;
-        yield return null;
-
-        // NavMesh 위로 강제 스냅
-        if (NavMesh.SamplePosition(
-            transform.position,
-            out NavMeshHit hit,
-            2.0f,
-            NavMesh.AllAreas))
-        {
-            transform.position = hit.position;
-        }
-        else
-        {
-            Debug.LogError("NPC failed to snap to NavMesh on exit");
-            yield break;
-        }
-
-        // Agent 재활성
         agent.enabled = true;
         yield return null;
 
         agent.isStopped = false;
         agent.SetDestination(exitPoint.position);
 
-        // 도착할 때까지 대기
+        bool hasStartedMoving = false;
+        float failSafeTimer = 0f;
+        const float FAIL_SAFE_TIME = 3f;
+
         while (true)
         {
-            if (!agent.pathPending &&
+            failSafeTimer += Time.deltaTime;
+
+            // 이동 시작 감지
+            if (!hasStartedMoving && agent.velocity.sqrMagnitude > 0.01f)
+                hasStartedMoving = true;
+
+            // 정상 도착
+            if (hasStartedMoving &&
+                !agent.pathPending &&
                 agent.remainingDistance <= agent.stoppingDistance &&
                 agent.velocity.sqrMagnitude < 0.01f)
+            {
                 break;
+            }
+
+            // 이동 실패 → 강제 종료
+            if (failSafeTimer >= FAIL_SAFE_TIME)
+            {
+                Debug.LogWarning($"[NPC Exit] Fail-safe triggered: {name}");
+                break;
+            }
 
             yield return null;
         }
 
-        npcLogic?.OnRideEnd();
-
-        // 하차 완료 알림
         OnExitCompleted?.Invoke(this);
     }
 
@@ -290,5 +289,10 @@ public class NPCController : MonoBehaviour
     public void SetLookPlayer(bool lookPlayer)
     {
         lookState = lookPlayer ? LookState.Player : LookState.Default;
+    }
+
+    public bool IsLookingPlayer
+    {
+        get { return lookState == LookState.Player; }
     }
 }

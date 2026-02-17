@@ -1158,6 +1158,7 @@ MonoBehaviour:
     minNPCCount: 2
     maxNPCCount: 4
     allowedNPCTypes: 000000000100000002000000
+  floorText: {fileID: 6880214396164588636}
 --- !u!1 &1927261467
 GameObject:
   m_ObjectHideFlags: 0
@@ -1187,6 +1188,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d59202b421b0e3479b9280a0c34fb94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pressureBorderUI: {fileID: 517237604}
 --- !u!4 &1927261469
 Transform:
   m_ObjectHideFlags: 0
@@ -2430,7 +2432,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &2423078842246535264
 Transform:
@@ -5228,7 +5230,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!1 &8292702624790961896
 GameObject:
@@ -5673,7 +5675,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &8841281643504637935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5698,8 +5700,8 @@ MonoBehaviour:
   - {fileID: 768746293}
   - {fileID: 2145179330}
   enterDelay: 1.5
-  npcInterval: 0.5
-  stayDuration: 2
+  npcInterval: 0.4
+  stayDuration: 1
   maxNPCCount: 4
 --- !u!1 &8903977904891188437
 GameObject:
@@ -6176,7 +6178,6 @@ SceneRoots:
   - {fileID: 1965138832532113703}
   - {fileID: 8997996947810198919}
   - {fileID: 1730562268}
-  - {fileID: 1927261469}
   - {fileID: 1170871072}
   - {fileID: 951443978}
   - {fileID: 768746293}
@@ -6185,3 +6186,4 @@ SceneRoots:
   - {fileID: 675908129}
   - {fileID: 2117897422}
   - {fileID: 1871094537}
+  - {fileID: 1927261469}

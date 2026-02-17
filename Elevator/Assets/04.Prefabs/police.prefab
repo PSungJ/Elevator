@@ -349,8 +349,9 @@ GameObject:
   - component: {fileID: 8846454127854132912}
   - component: {fileID: 813850925933303754}
   - component: {fileID: 3576065659789756767}
-  - component: {fileID: 85060229185153275}
   - component: {fileID: 6767475969468050010}
+  - component: {fileID: 85060229185153275}
+  - component: {fileID: 199959690574250110}
   m_Layer: 0
   m_Name: police
   m_TagString: Untagged
@@ -418,20 +419,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &85060229185153275
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2616986917351205762}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6cbb9238ff8317c46bb1c6bdcce9f971, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  npcType: 2
-  defaultLookTarget: {fileID: 0}
 --- !u!136 &6767475969468050010
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -455,6 +442,37 @@ CapsuleCollider:
   m_Height: 1.8
   m_Direction: 1
   m_Center: {x: 0, y: 0.8, z: 0}
+--- !u!114 &85060229185153275
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2616986917351205762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cbb9238ff8317c46bb1c6bdcce9f971, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  npcType: 2
+  defaultLookTarget: {fileID: 0}
+--- !u!114 &199959690574250110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2616986917351205762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b919683a86250842914b51fea1fde52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lookPoint: {fileID: 8846454127854132912}
+  gazeStartDelay: 2
+  baseAwkwardPerSec: 1
+  acceleration: 0.5
+  recoverPerSec: 1
 --- !u!1 &2996738200631760330
 GameObject:
   m_ObjectHideFlags: 0

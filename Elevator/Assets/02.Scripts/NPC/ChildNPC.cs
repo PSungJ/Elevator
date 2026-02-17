@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ChildNPC : BaseNPC
+public class ChildNPC : GimmickNPC
 {
     enum State
     {
@@ -26,23 +26,26 @@ public class ChildNPC : BaseNPC
     float gazeTimer = 0f;
     NPCController npcController;
 
-    public override bool CanInteract =>
-        isActive && npcController.IsSettled && state == State.Pressuring;
+    public override bool CanGimmickInteract =>
+        isActive && state == State.Pressuring;
+
+    void Awake()
+    {
+        pressureUI = UIManager.Instance.pressureBorderUI;
+    }
 
     void Start()
     {
         npcController = GetComponent<NPCController>();
     }
 
-    protected override void Update()
+    void Update()
     {
-        base.Update();  // 공통 기믹
-        if (state != State.Pressuring)
-        {
-            Debug.Log("ChildNPC Update blocked");
+        if (!CanGimmickInteract)
             return;
-        }
-        if (!npcController.IsSettled)
+
+        // 아이가 플레이어를 보고 있을 때만 압박
+        if (!npcController.IsLookingPlayer)
             return;
 
         // 아이 기믹
@@ -69,6 +72,8 @@ public class ChildNPC : BaseNPC
 
         // 압박 UI 호출
         pressureUI.Show();
+
+        PlayerController.Instance.SetPressure(true);
     }
 
     /// <summary>
@@ -76,9 +81,11 @@ public class ChildNPC : BaseNPC
     /// </summary>
     public override void OnGazed(float deltaTime)
     {
-        base.OnGazed(deltaTime); // 공통 민망함 압박
+        //base.OnGazed(deltaTime); // 공통 민망함 압박
 
-        if (!CanInteract) return;
+        if (!CanGimmickInteract)
+            return;
+
         gazeTimer += deltaTime;
 
         Debug.Log($"{gazeTimer:F2} / {requiredGazeTime} - Player Gazing");
@@ -94,7 +101,7 @@ public class ChildNPC : BaseNPC
     /// </summary>
     public override void ResetGaze()
     {
-        base.ResetGaze(); // 공통 gaze 처리
+        //base.ResetGaze(); // 공통 gaze 처리
         gazeTimer = 0f;
     }
 
@@ -110,9 +117,7 @@ public class ChildNPC : BaseNPC
 
         // UI 종료
         pressureUI.Hide();
-        
-        gazeTimer = 0f;
-
+        PlayerController.Instance.SetPressure(false);
         StartCoroutine(CooldownRoutine());
     }
 
@@ -124,12 +129,16 @@ public class ChildNPC : BaseNPC
 
     IEnumerator CooldownRoutine()
     {
-        float wait = Random.Range(cooldownMin, cooldownMax);
-        yield return new WaitForSeconds(wait);
+        yield return new WaitForSeconds(
+            Random.Range(cooldownMin, cooldownMax)
+        );
 
         state = State.Pressuring;
+        gazeTimer = 0f;
 
         npcController.SetLookPlayer(true);
         pressureUI.Show();
+
+        PlayerController.Instance.SetPressure(true);
     }
 }

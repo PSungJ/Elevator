@@ -35,6 +35,8 @@ public class PlayerController : MonoBehaviour
     // 현재 시선을 강제로 끄는 대상 (노인 이상행동 중)
     Transform forcedTarget;
 
+    public bool IsUnderPressure { get; private set; }
+
     void Awake()
     {
         Instance = this;
@@ -49,6 +51,12 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         HandleLook();
+    }
+
+    // 아이 기믹 중에는 회복차단
+    public void SetPressure(bool value)
+    {
+        IsUnderPressure = value;
     }
 
     /// <summary>
@@ -130,8 +138,11 @@ public class PlayerController : MonoBehaviour
         awkward = Mathf.Clamp(awkward, 0f, maxAwkward);
 
         awkwardUI.SetAwkward(awkward / maxAwkward);
-        // 디버그 확인용
-        Debug.Log($"Awkward Gauge: {awkward}");
+    }
+
+    public void RecoverAwkward(float amount)
+    {
+        AddAwkward(-amount);
     }
 
     // =========================
