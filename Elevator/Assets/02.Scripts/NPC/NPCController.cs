@@ -11,7 +11,7 @@ public enum NPCType
 }
 /// <summary>
 /// NPC 이동 / 정착 / 시선 제어 담당
-/// 개별 NPC 기믹 로직은 BaseNPC 파생 클래스에서 처리
+/// 개별 NPC 기믹 로직은 BaseNPC 클래스에서 처리
 /// </summary>
 public class NPCController : MonoBehaviour
 {
