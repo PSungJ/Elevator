@@ -13,6 +13,7 @@ public class PlayerController : MonoBehaviour
     public static PlayerController Instance;
 
     [SerializeField] AwkwardUI awkwardUI;
+    private bool isGameOver = false;
 
     [Header("Awkward Gauge")]
     public float awkward;              // 현재 민망함
@@ -36,6 +37,7 @@ public class PlayerController : MonoBehaviour
     Transform forcedTarget;
 
     public bool IsUnderPressure { get; private set; }
+    public bool CanControl { get; private set; } = true;
 
     void Awake()
     {
@@ -64,6 +66,7 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     void HandleLook()
     {
+        if (!CanControl) return;
         // =========================
         // 1️. 플레이어 마우스 입력 (항상 적용)
         // =========================
@@ -134,10 +137,18 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     public void AddAwkward(float amount)
     {
+        if (isGameOver) return;
+
         awkward += amount;
         awkward = Mathf.Clamp(awkward, 0f, maxAwkward);
 
         awkwardUI.SetAwkward(awkward / maxAwkward);
+
+        if (awkward >= maxAwkward)
+        {
+            if (isGameOver) return;
+            UIManager.Instance.ShowGameOver();
+        }
     }
 
     public void RecoverAwkward(float amount)
@@ -165,5 +176,22 @@ public class PlayerController : MonoBehaviour
     public void ReleaseForceLook()
     {
         forcedTarget = null;
+    }
+
+    // UI 활성화 시 입력 차단 구조
+    public void SetControl(bool value)
+    {
+        CanControl = value;
+
+        if (value)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 }

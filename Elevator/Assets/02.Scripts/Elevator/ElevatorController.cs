@@ -44,6 +44,11 @@ public class ElevatorController : MonoBehaviour
     [Header("Settings")]
     public int maxNPCCount = 4;
 
+    [Header("Sound")]
+    [SerializeField] AudioClip bellSound;
+    [SerializeField] AudioClip elevatorSound;
+    [SerializeField] AudioClip doorSound;
+
     Animator ani;
 
     List<Transform> availablePoints;
@@ -57,6 +62,7 @@ public class ElevatorController : MonoBehaviour
     void Start()
     {
         ani = GetComponent<Animator>();
+        SoundManager.Instance.PlayBGM(elevatorSound);
 
         // 빈 자리 초기화
         ResetStandPoints();
@@ -74,7 +80,7 @@ public class ElevatorController : MonoBehaviour
         {
             // ===== 층 도착 =====
             CurrentState = ElevatorState.Unboarding;
-            OpenDoor();
+            StartCoroutine(OpenDoor());
 
             yield return ExitNPCs();
 
@@ -88,10 +94,11 @@ public class ElevatorController : MonoBehaviour
             yield return new WaitForSeconds(stayDuration);
 
             // ===== 이동 =====
-            CloseDoor();
+            StartCoroutine(CloseDoor());
             CurrentState = ElevatorState.Moving;
-            yield return new WaitForSeconds(60f); // 다음 층 까지의 체류시간
+            yield return new WaitForSeconds(30f); // 다음 층 까지의 체류시간
 
+            SoundManager.Instance.PlaySFX(bellSound);
             FloorManager.Instance.MoveToNextFloor();
         }
     }
@@ -203,14 +210,17 @@ public class ElevatorController : MonoBehaviour
     // =========================
     // 문 제어
     // =========================
-    void OpenDoor()
+    IEnumerator OpenDoor()
     {
         ani.SetBool("isOpen", true);
         IsDoorOpen = true;
         IsNavMeshPossible = false;
+
+        yield return new WaitForSeconds(1f);
+        SoundManager.Instance.PlaySFX(doorSound);
     }
 
-    void CloseDoor()
+    IEnumerator CloseDoor()
     {
         ani.SetBool("isOpen", false);
         IsDoorOpen = false;
@@ -220,6 +230,9 @@ public class ElevatorController : MonoBehaviour
         {
             if (obs) obs.enabled = true;
         }
+
+        yield return new WaitForSeconds(1f);
+        SoundManager.Instance.PlaySFX(doorSound);        
     }
 
     // 문이 "완전히" 열렸을 때

@@ -11,6 +11,9 @@ AnimatorStateTransition:
   - m_ConditionMode: 2
     m_ConditionEvent: isWalk
     m_EventTreshold: 0
+  - m_ConditionMode: 2
+    m_ConditionEvent: isAction
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 7675648392523642731}
   m_Solo: 0
@@ -20,7 +23,7 @@ AnimatorStateTransition:
   m_TransitionDuration: 0
   m_TransitionOffset: 0
   m_ExitTime: 3.1325562
-  m_HasExitTime: 1
+  m_HasExitTime: 0
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
@@ -63,6 +66,9 @@ AnimatorStateTransition:
   - m_ConditionMode: 2
     m_ConditionEvent: isWalk
     m_EventTreshold: 0
+  - m_ConditionMode: 2
+    m_ConditionEvent: isAction
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 7675648392523642731}
   m_Solo: 0
@@ -72,7 +78,7 @@ AnimatorStateTransition:
   m_TransitionDuration: 0
   m_TransitionOffset: 0.003500251
   m_ExitTime: 2.6850498
-  m_HasExitTime: 1
+  m_HasExitTime: 0
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
@@ -140,6 +146,9 @@ AnimatorStateTransition:
   - m_ConditionMode: 1
     m_ConditionEvent: Action2
     m_EventTreshold: 0
+  - m_ConditionMode: 1
+    m_ConditionEvent: isAction
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 595543370992342245}
   m_Solo: 0
@@ -164,6 +173,9 @@ AnimatorStateTransition:
   m_Conditions:
   - m_ConditionMode: 1
     m_ConditionEvent: Action3
+    m_EventTreshold: 0
+  - m_ConditionMode: 1
+    m_ConditionEvent: isAction
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: -7428352235785447510}
@@ -190,6 +202,9 @@ AnimatorStateTransition:
   - m_ConditionMode: 2
     m_ConditionEvent: isWalk
     m_EventTreshold: 0
+  - m_ConditionMode: 2
+    m_ConditionEvent: isAction
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 7675648392523642731}
   m_Solo: 0
@@ -199,7 +214,7 @@ AnimatorStateTransition:
   m_TransitionDuration: 0
   m_TransitionOffset: 0
   m_ExitTime: 1.4967017
-  m_HasExitTime: 1
+  m_HasExitTime: 0
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
@@ -242,6 +257,9 @@ AnimatorStateTransition:
   - m_ConditionMode: 2
     m_ConditionEvent: isWalk
     m_EventTreshold: 0
+  - m_ConditionMode: 2
+    m_ConditionEvent: isAction
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 7675648392523642731}
   m_Solo: 0
@@ -251,7 +269,7 @@ AnimatorStateTransition:
   m_TransitionDuration: 0
   m_TransitionOffset: 0
   m_ExitTime: 0.8878702
-  m_HasExitTime: 1
+  m_HasExitTime: 0
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
@@ -266,6 +284,9 @@ AnimatorStateTransition:
   m_Conditions:
   - m_ConditionMode: 1
     m_ConditionEvent: Action4
+    m_EventTreshold: 0
+  - m_ConditionMode: 1
+    m_ConditionEvent: isAction
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: -5276378852020916509}
@@ -291,6 +312,12 @@ AnimatorController:
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: isWalk
+    m_Type: 4
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: isAction
     m_Type: 4
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -431,6 +458,9 @@ AnimatorStateTransition:
   - m_ConditionMode: 1
     m_ConditionEvent: Action0
     m_EventTreshold: 0
+  - m_ConditionMode: 1
+    m_ConditionEvent: isAction
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1101186452789073690}
   m_Solo: 0
@@ -455,6 +485,9 @@ AnimatorStateTransition:
   m_Conditions:
   - m_ConditionMode: 1
     m_ConditionEvent: Action1
+    m_EventTreshold: 0
+  - m_ConditionMode: 1
+    m_ConditionEvent: isAction
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 1282173791742660448}
@@ -578,6 +611,9 @@ AnimatorStateTransition:
   - m_ConditionMode: 2
     m_ConditionEvent: isWalk
     m_EventTreshold: 0
+  - m_ConditionMode: 2
+    m_ConditionEvent: isAction
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
   m_DstState: {fileID: 7675648392523642731}
   m_Solo: 0
@@ -587,7 +623,7 @@ AnimatorStateTransition:
   m_TransitionDuration: 0
   m_TransitionOffset: 0
   m_ExitTime: 2.499713
-  m_HasExitTime: 1
+  m_HasExitTime: 0
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
   m_OrderedInterruption: 1

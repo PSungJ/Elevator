@@ -4,15 +4,21 @@ using UnityEngine;
 
 public class SceneLoader : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public AudioSource sound;
+
     void Start()
     {
-        
+        sound = GetComponent<AudioSource>();
     }
 
-    // Update is called once per frame
-    void Update()
+    public void PlayGame()
     {
-        
+        sound.Play();
+        FadeManager.Instance.FadeAndLoad("GameScene");
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
     }
 }

@@ -12,6 +12,7 @@ public class PressureBorderUI : MonoBehaviour
     public float blinkSpeed = 2f;      // 깜빡임 속도
     public float maxAlpha = 0.6f;      // 최대 알파
     public float minAlpha = 0.1f;      // 최소 알파
+    public AudioClip heartBeat;
 
     bool isActive = false;
     float timer = 0f;
@@ -47,12 +48,14 @@ public class PressureBorderUI : MonoBehaviour
 
     public void Show()
     {
+        SoundManager.Instance.PlaySFX(heartBeat);
         isActive = true;
         timer = 0f;
     }
 
     public void Hide()
     {
+        SoundManager.Instance.StopSFX();
         isActive = false;
         SetAlpha(0f);
     }

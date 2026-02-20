@@ -31,7 +31,7 @@ public class ElderNPC : GimmickNPC
     float forceLookTimer = 0f;   // 강제 시선 유지 시간
 
     // ===== 설정값 =====
-    float gazeRequiredTime;      // 3~5초 랜덤
+    float gazeRequiredTime;      // 시간 랜덤
     const float FORCE_LOOK_LIMIT = 5f;
 
     float calmDelayMin = 3f;
@@ -115,7 +115,7 @@ public class ElderNPC : GimmickNPC
         // 타이머 초기화
         gazeTimer = 0f;
         forceLookTimer = 0f;
-        gazeRequiredTime = Random.Range(3f, 5f);
+        gazeRequiredTime = Random.Range(2f, 3f);
 
         gazeGaugeUI.Show(true);
         gazeGaugeUI.SetGauge(0f);
@@ -128,7 +128,6 @@ public class ElderNPC : GimmickNPC
 
     void Update()
     {
-        //base.Update();
         if (state != State.Acting)
             return;
 
@@ -177,9 +176,8 @@ public class ElderNPC : GimmickNPC
 
     void StopWeirdAction()
     {
-        state = State.Idle;
-
-        ani.SetBool("isWalk", false);
+        ani.SetBool("isAction", false);
+        state = State.Idle;      
 
         gazeGaugeUI.Show(false);
 
@@ -191,5 +189,6 @@ public class ElderNPC : GimmickNPC
     {
         int index = Random.Range(0, 4);
         ani.SetTrigger("Action" + index);
+        ani.SetBool("isAction", true);
     }
 }

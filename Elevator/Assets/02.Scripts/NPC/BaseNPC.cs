@@ -16,7 +16,6 @@ public class BaseNPC : MonoBehaviour
     public float gazeStartDelay = 2f;          // 응시 시작까지 필요한 시간
     public float baseAwkwardPerSec = 1f;        // 기본 증가량
     public float acceleration = 0.5f;           // 시간당 가속
-    //public float recoverPerSec = 1f;             // 시선 해제 시 감소량
 
     protected float gazeHoldTimer = 0f;
     protected float awkwardTimer = 0f;

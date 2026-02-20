@@ -49,7 +49,6 @@ public class ChildNPC : GimmickNPC
             return;
 
         // 아이 기믹
-        Debug.Log("ChildNPC Update ADD AWKWARD");
         PlayerController.Instance.AddAwkward(
                 pressureAwkwardPerSecond * Time.deltaTime
         );
@@ -62,11 +61,19 @@ public class ChildNPC : GimmickNPC
         gazeTimer = 0f;
     }
 
+    public override void OnRideEnd()
+    {
+        base.OnRideEnd();
+        state = State.Cooldown;
+    }
+
     /// <summary>
     /// 엘리베이터 도착
     /// </summary>
     public override void OnArrivedInElevator()
     {
+        if (!isActive) return;
+
         // 아이가 먼저 플레이어를 쳐다봄
         npcController.SetLookPlayer(true);
 
