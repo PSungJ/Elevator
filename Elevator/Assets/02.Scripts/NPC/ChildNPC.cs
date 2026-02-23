@@ -64,6 +64,12 @@ public class ChildNPC : GimmickNPC
     public override void OnRideEnd()
     {
         base.OnRideEnd();
+
+        StopAllCoroutines();
+        pressureUI.Hide();
+        PlayerController.Instance.SetPressure(false);
+        npcController.SetLookPlayer(false);
+
         state = State.Cooldown;
     }
 
@@ -139,6 +145,7 @@ public class ChildNPC : GimmickNPC
         yield return new WaitForSeconds(
             Random.Range(cooldownMin, cooldownMax)
         );
+        if (!isActive) yield break;
 
         state = State.Pressuring;
         gazeTimer = 0f;

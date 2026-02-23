@@ -12,6 +12,7 @@ public class UIManager : MonoBehaviour
     [Header("Panels")]
     public GameObject gameOverPanel;
     public GameObject menuPanel;
+    public GameObject gameClearPanel;
 
     [Header("PlayerUI")]
     public GameObject playerUI;
@@ -21,14 +22,35 @@ public class UIManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        SetGameplayCursor();
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            ToggleMenu();
+            if (!isMenuOpen)
+                OpenMenu();
+            else
+            {
+                Debug.Log("ResumeGame Called");
+                ResumeGame();
+            }
         }
+    }
+
+    // 게임 플레이 상태
+    public void SetGameplayCursor()
+    {
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+
+    // UI 상태 (메뉴, 게임오버 등)
+    public void SetUICursor()
+    {
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
     }
 
     // ================================
@@ -39,6 +61,18 @@ public class UIManager : MonoBehaviour
         StartCoroutine(GameOverSequence());
     }
 
+    public void ShowGameClear()
+    {
+        SoundManager.Instance.StopBGM();
+        SoundManager.Instance.StopSFX();
+
+        gameClearPanel.SetActive(true);
+        playerUI.SetActive(false);
+        Time.timeScale = 0f;
+
+        PlayerController.Instance.SetControl(false);
+    }
+
     IEnumerator GameOverSequence()
     {
         SoundManager.Instance.StopBGM();
@@ -47,6 +81,7 @@ public class UIManager : MonoBehaviour
         yield return new WaitForSecondsRealtime(0.3f);
 
         gameOverPanel.SetActive(true);
+        playerUI.SetActive(false);
         Time.timeScale = 0f;
 
         PlayerController.Instance.SetControl(false);
@@ -55,22 +90,22 @@ public class UIManager : MonoBehaviour
     // ================================
     // Menu
     // ================================
-    public void ToggleMenu()
+    public void OpenMenu()
     {
-        if (gameOverPanel.activeSelf) return; // GameOver 중에는 ESC 막기
+        if (gameOverPanel.activeSelf || gameClearPanel.activeSelf)
+            return;
 
-        isMenuOpen = !isMenuOpen;
-        menuPanel.SetActive(isMenuOpen);
-        playerUI.SetActive(!isMenuOpen);
+        isMenuOpen = true;
 
-        Time.timeScale = isMenuOpen ? 0f : 1f;
+        menuPanel.SetActive(true);
+        playerUI.SetActive(false);
 
-        PlayerController.Instance.SetControl(!isMenuOpen);
+        Time.timeScale = 0f;
+        AudioListener.pause = true;
 
-        if (isMenuOpen)
-            AudioListener.pause = true;
-        else
-            AudioListener.pause = false;
+        PlayerController.Instance.SetControl(false);
+
+        SetUICursor();
     }
 
     public void ResumeGame()
@@ -82,6 +117,7 @@ public class UIManager : MonoBehaviour
         Time.timeScale = 1f;
 
         PlayerController.Instance.SetControl(true);
+        SetGameplayCursor();
     }
 
     // ================================

@@ -42,6 +42,11 @@ public class FloorManager : MonoBehaviour
         UpdateFloorUI(); // 층 이동과 동시에 UI 갱신
     }
 
+    public bool IsLastFloor()
+    {
+        return CurrentFloorIndex >= floors.Length - 1;
+    }
+
     void UpdateFloorUI()
     {
         if (floorText == null)

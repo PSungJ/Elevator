@@ -48,14 +48,14 @@ public class PressureBorderUI : MonoBehaviour
 
     public void Show()
     {
-        SoundManager.Instance.PlaySFX(heartBeat);
+        SoundManager.Instance.PlayHeartBeat(heartBeat);
         isActive = true;
         timer = 0f;
     }
 
     public void Hide()
     {
-        SoundManager.Instance.StopSFX();
+        SoundManager.Instance.StopHeartBeat();
         isActive = false;
         SetAlpha(0f);
     }

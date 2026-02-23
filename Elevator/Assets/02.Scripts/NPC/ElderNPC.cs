@@ -93,6 +93,8 @@ public class ElderNPC : GimmickNPC
         while (true)
         {
             yield return new WaitForSeconds(Random.Range(calmDelayMin, calmDelayMax));
+            if (!isActive) yield break;
+
             StartWeirdAction();
 
             // Acting이 끝날 때까지 대기

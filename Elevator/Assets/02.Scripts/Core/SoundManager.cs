@@ -8,7 +8,8 @@ public class SoundManager : MonoBehaviour
 
     [Header("Audio Sources")]
     public AudioSource bgmSource;
-    public AudioSource sfxSource;
+    public AudioSource loopSfxSource;   // 심박동 전용
+    public AudioSource oneShotSource;   // 벨, 문소리 등
 
     [Header("Volume")]
     [Range(0f, 1f)] public float bgmVolume = 1f;
@@ -54,17 +55,30 @@ public class SoundManager : MonoBehaviour
     // =========================
     public void PlaySFX(AudioClip clip)
     {
-        sfxSource.PlayOneShot(clip, sfxVolume);
+        oneShotSource.PlayOneShot(clip, sfxVolume);
     }
 
     public void StopSFX()
     {
-        sfxSource.Stop();
+        oneShotSource.Stop();
     }
 
     public void SetSFXVolume(float value)
     {
         sfxVolume = value;
-        sfxSource.volume = value;
+        loopSfxSource.volume = value;
+        oneShotSource.volume = value;
+    }
+
+    public void PlayHeartBeat(AudioClip clip)
+    {
+        loopSfxSource.clip = clip;
+        loopSfxSource.loop = true;
+        loopSfxSource.Play();
+    }
+
+    public void StopHeartBeat()
+    {
+        loopSfxSource.Stop();
     }
 }

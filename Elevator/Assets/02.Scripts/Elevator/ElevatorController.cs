@@ -83,6 +83,14 @@ public class ElevatorController : MonoBehaviour
             StartCoroutine(OpenDoor());
 
             yield return ExitNPCs();
+            // 마지막 층 체크
+            if (FloorManager.Instance.IsLastFloor())
+            {
+                Debug.Log("GAME CLEAR");
+                UIManager.Instance.ShowGameClear();
+                UIManager.Instance.SetUICursor();
+                yield break;
+            }
 
             ResetStandPoints();
             yield return new WaitForSeconds(enterDelay);
@@ -96,7 +104,7 @@ public class ElevatorController : MonoBehaviour
             // ===== 이동 =====
             StartCoroutine(CloseDoor());
             CurrentState = ElevatorState.Moving;
-            yield return new WaitForSeconds(30f); // 다음 층 까지의 체류시간
+            yield return new WaitForSeconds(40f); // 다음 층 까지의 체류시간
 
             SoundManager.Instance.PlaySFX(bellSound);
             FloorManager.Instance.MoveToNextFloor();
@@ -127,6 +135,7 @@ public class ElevatorController : MonoBehaviour
 
             npc.OnExitCompleted += OnNPCExitCompleted;
             npc.ExitElevator(npcExitPoint);
+            npc.ForceStopGimmick();
         }
 
         void OnNPCExitCompleted(NPCController npc)

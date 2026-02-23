@@ -148,6 +148,7 @@ public class PlayerController : MonoBehaviour
         {
             if (isGameOver) return;
             UIManager.Instance.ShowGameOver();
+            UIManager.Instance.SetUICursor();
         }
     }
 

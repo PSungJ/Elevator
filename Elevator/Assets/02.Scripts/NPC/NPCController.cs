@@ -295,4 +295,10 @@ public class NPCController : MonoBehaviour
     {
         get { return lookState == LookState.Player; }
     }
+
+    public void ForceStopGimmick()
+    {
+        npcLogic?.OnRideEnd();
+        PlayerController.Instance.ReleaseForceLook();
+    }
 }
