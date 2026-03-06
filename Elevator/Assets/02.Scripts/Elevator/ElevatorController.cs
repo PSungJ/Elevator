@@ -18,6 +18,7 @@ public class ElevatorController : MonoBehaviour
         Idle,
         Boarding,     // NPC 탑승 중
         Moving,       // 층 이동 중
+        Failure,      // 엘리베이터 고장
         Unboarding    // NPC 하차 중
     }
 
@@ -48,6 +49,14 @@ public class ElevatorController : MonoBehaviour
     [SerializeField] AudioClip bellSound;
     [SerializeField] AudioClip elevatorSound;
     [SerializeField] AudioClip doorSound;
+
+    [Header("Failure Event")]
+    [SerializeField] Light elevatorLight;     // 엘리베이터 내부 조명
+    [SerializeField] AudioClip alarmSound;    // 경보음
+    [SerializeField] float failureDuration = 6f;
+
+    int failureCount = 0;
+    const int MAX_FAILURE = 2;
 
     Animator ani;
 
@@ -104,6 +113,15 @@ public class ElevatorController : MonoBehaviour
             // ===== 이동 =====
             StartCoroutine(CloseDoor());
             CurrentState = ElevatorState.Moving;
+
+            // 3층 이후부터 고장 이벤트 가능
+            if (FloorManager.Instance.CurrentFloor.floorNumber >= 3 &&
+                failureCount < MAX_FAILURE &&
+                Random.value < 0.35f)
+            {
+                yield return FailureRoutine();
+            }
+
             yield return new WaitForSeconds(40f); // 다음 층 까지의 체류시간
 
             SoundManager.Instance.PlaySFX(bellSound);
@@ -255,5 +273,58 @@ public class ElevatorController : MonoBehaviour
         IsNavMeshPossible = true;
         IsDoorOpen = true;
         CurrentState = ElevatorState.Unboarding;
+    }
+
+    // 고장 연출
+    IEnumerator FailureRoutine()
+    {
+        failureCount++;
+        CurrentState = ElevatorState.Failure;
+
+        Debug.Log("ELEVATOR FAILURE START");
+
+        // NPC 기믹 전부 중지
+        foreach (var npc in currentNPCs)
+        {
+            npc.ForceStopGimmick();
+            npc.SetLookPlayer(true);
+        }
+
+        // 경보음 + 빨간 깜빡임
+        SoundManager.Instance.PlaySFX(alarmSound);
+        StartCoroutine(BlinkRedLight());
+
+        // 조명 OFF
+        elevatorLight.enabled = false;
+
+        float timer = 0f;
+
+        // 강제 민망함 상승
+        while (timer < failureDuration)
+        {
+            PlayerController.Instance.AddAwkward(8f * Time.deltaTime);
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        // 조명 복구
+        elevatorLight.enabled = true;
+
+        foreach (var npc in currentNPCs)
+            npc.SetLookPlayer(false);
+
+        Debug.Log("ELEVATOR FAILURE END");
+
+        // 연출 여유
+        yield return new WaitForSeconds(2f);
+    }
+
+    IEnumerator BlinkRedLight()
+    {
+        while (true)
+        {
+            elevatorLight.enabled = !elevatorLight.enabled;
+            yield return new WaitForSeconds(0.2f);
+        }
     }
 }

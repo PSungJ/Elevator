@@ -2894,6 +2894,9 @@ MonoBehaviour:
   bellSound: {fileID: 8300000, guid: b6497972798f57f409ea376c1c78e2c4, type: 3}
   elevatorSound: {fileID: 8300000, guid: 957d0eecd679dd641bdd630181572dd2, type: 3}
   doorSound: {fileID: 8300000, guid: 65d29a6c02cfe4045872b32528b554db, type: 3}
+  elevatorLight: {fileID: 27321264}
+  alarmSound: {fileID: 8300000, guid: 853f8f2619690f84a947d64c6ad4d53f, type: 3}
+  failureDuration: 6
 --- !u!95 &589645339
 Animator:
   serializedVersion: 5
