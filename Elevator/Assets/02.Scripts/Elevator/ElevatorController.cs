@@ -51,7 +51,8 @@ public class ElevatorController : MonoBehaviour
     [SerializeField] AudioClip doorSound;
 
     [Header("Failure Event")]
-    [SerializeField] Light elevatorLight;     // 엘리베이터 내부 조명
+    [SerializeField] Light warningLight;     // 엘리베이터 경고 조명
+    [SerializeField] Light elevatorLight;     // 엘리베이터 기본 조명
     [SerializeField] AudioClip alarmSound;    // 경보음
     [SerializeField] float failureDuration = 6f;
 
@@ -116,8 +117,7 @@ public class ElevatorController : MonoBehaviour
 
             // 3층 이후부터 고장 이벤트 가능
             if (FloorManager.Instance.CurrentFloor.floorNumber >= 3 &&
-                failureCount < MAX_FAILURE &&
-                Random.value < 0.35f)
+                failureCount < MAX_FAILURE && Random.value < 0.35f)
             {
                 yield return FailureRoutine();
             }
@@ -296,6 +296,7 @@ public class ElevatorController : MonoBehaviour
 
         // 조명 OFF
         elevatorLight.enabled = false;
+        warningLight.enabled = true;
 
         float timer = 0f;
 
@@ -309,6 +310,7 @@ public class ElevatorController : MonoBehaviour
 
         // 조명 복구
         elevatorLight.enabled = true;
+        warningLight.enabled = false;
 
         foreach (var npc in currentNPCs)
             npc.SetLookPlayer(false);
@@ -323,7 +325,7 @@ public class ElevatorController : MonoBehaviour
     {
         while (true)
         {
-            elevatorLight.enabled = !elevatorLight.enabled;
+            warningLight.enabled = !warningLight.enabled;
             yield return new WaitForSeconds(0.2f);
         }
     }

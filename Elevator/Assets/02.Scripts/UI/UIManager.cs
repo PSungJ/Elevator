@@ -126,6 +126,11 @@ public class UIManager : MonoBehaviour
     public void GoToLobby()
     {
         Time.timeScale = 1f;
+        AudioListener.pause = true;
+
+        SoundManager.Instance.StopBGM();
+        SoundManager.Instance.StopSFX();
+
         SceneManager.LoadScene("LobbyScene");
     }
 }

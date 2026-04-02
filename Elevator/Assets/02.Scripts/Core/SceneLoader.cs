@@ -9,6 +9,7 @@ public class SceneLoader : MonoBehaviour
     void Start()
     {
         sound = GetComponent<AudioSource>();
+        AudioListener.pause = false;
     }
 
     public void PlayGame()
